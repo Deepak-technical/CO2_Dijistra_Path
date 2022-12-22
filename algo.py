@@ -4,6 +4,8 @@ import math
 import numpy as np
 import heapq
 def graph_gen():
+
+    
     #Reading the data fro csv files which conatin about source, destination,weights
     df=pd.read_csv('co2_data.csv')
     #Converting the weight to approximate the vaues
