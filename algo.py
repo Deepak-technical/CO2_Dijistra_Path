@@ -3,14 +3,19 @@ import pandas as pd
 import math
 import numpy as np
 import heapq
+import pickle as pk
+import warnings
+warnings.filterwarnings("ignore")
 def graph_gen():
 
     
     #Reading the data fro csv files which conatin about source, destination,weights
-    df=pd.read_csv('co2_data.csv')
+    df=pd.read_csv('CO_Data.csv')
     #Converting the weight to approximate the vaues
-    df['length']=df['length'].apply(np.ceil).astype(int)
-    df['Co2Emitted']=df['Co2Emitted'].apply(np.ceil).astype(int)
+    # df['length']=df['length'].apply(np.ceil).astype(int)
+    # df['CO']=df['CO'].apply(np.ceil).astype(int)
+    # df['NO']=df['NO'].apply(np.ceil).astype(int)
+    # df['SO']=df['SO'].apply(np.ceil).astype(int)
 
     # Converting the csv file into list for creating a graph object
     data=df.values.tolist()
@@ -33,8 +38,10 @@ def Dij_generator(l):
                 node=l[i][0]
                 adjnode=l[i][1]
                 weight=l[i][2]
-                co2=l[i][3]
-                adj[node].append([adjnode,weight,co2])
+                CO=l[i][3]
+                NO=l[i][4]
+                SO=l[i][5]
+                adj[node].append([adjnode,weight,CO,NO,SO])
                 # print(adj)
                 
         # Enter your code here
@@ -63,22 +70,26 @@ def Q1_dijkstra(source: int, destination: int, graph_object) -> int:
     
     distance[source]=0
     co2_emission[source]=0
-    pq=[(source,0,0)]
+    pq=[(source,0,0,0,0)]
     heapq.heapify(pq)
     while(len(pq)>0):
         curr=heapq.heappop(pq)
         node=curr[0]
         dis=curr[1]
-        co2_emitted=curr[2]
+        CO_emitted=curr[2]
+        SO_emitted=curr[2]
+        NO_emitted=curr[2]
 
         for i in graph_object[node]:
             adjnode=i[0]
             # print(adjnode)
             weight=i[1]
-            co2=i[2]
-            if(dis+weight<distance[adjnode] and co2_emitted+co2<co2_emission[adjnode]):
-                distance[adjnode]=dis+weight
-                co2_emission[adjnode]=co2_emitted+co2
+            co=i[2]
+            so=i[3]
+            no=i[4]
+            if(dis+weight<distance[adjnode] and (CO_emitted+SO_emitted+NO_emitted)+(0.6*co+0.25*so+0.15*no)<(co2_emission[adjnode])):
+                distance[adjnode]=(CO_emitted+SO_emitted+NO_emitted)+(0.6*co+0.25*so+0.15*no)
+                co2_emission[adjnode]=+(0.6*co+0.25*so+0.15*no)
                 parent[adjnode]=node
                 heapq.heappush(pq,(adjnode,distance[adjnode],co2_emission[adjnode]))
    
@@ -103,6 +114,8 @@ def Q1_dijkstra(source: int, destination: int, graph_object) -> int:
 data=graph_gen()
 ans=Dij_generator(data)
 # print(ans)
+co2_model=pk.load(open('./co2model.pkl','rb'))
+
 print("\nShortest Path with Minimum CO2 Emission and Shortest Path \n")
 source=785
 destination=296
@@ -110,8 +123,18 @@ ans2,ans3,path=Q1_dijkstra(source, destination,ans)
 print("Source Graph Node :",source)
 print("Destination Graph Node :",destination)
 print("Minimum Cost Path Node :",ans2/1000,"KM")
-print("Minimum CO2 Emission Path  :",ans3,"gm")
+print("Minimum CO2 Emission (Coverage) Path  :",ans3,"gm/m3")
 print("Minimum Cost Route is  :\n",path,"\n")
+
+co2_emitted=co2_model.predict([[2.1,3,20.6,20.2]])
+total_co2_user=round((co2_emitted[0]*(ans2/1000)),2)
+
+
+print("Total CO2 emmitted by the User",total_co2_user,"gm")
+print("Total fuel Cosumed by the user ",round((ans2/1000)/20,2),"litres")
+
+
+
 
 
 
